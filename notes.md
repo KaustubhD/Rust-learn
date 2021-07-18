@@ -218,6 +218,92 @@
 			```
 			More info from docs
 			> The `or_insert` method on [Entry]("https://doc.rust-lang.org/std/collections/hash_map/enum.Entry.html") is defined to return a mutable reference to the value for the corresponding Entry key if that key exists, and if not, inserts the parameter as the new value for this key and returns a mutable reference to the new value
+* Errors
+	* panic!
+		Rust offers a panic! macro to throw off errors in the code.
+		> By default, when a panic occurs, the program starts unwinding, which means Rust walks back up the stack and cleans up the data from each function it encounters. But this walking back and cleanup is a lot of work. The alternative is to immediately abort, which ends the program without cleaning up. Memory that the program was using will then need to be cleaned up by the operating system.
+	* Result Type
+		Result enum is defined as having two variants, `Ok` and `Err`
+		```rust
+		enum Result<T, E> {
+			Ok(T),
+			Err(E),
+		}
+		```
+		Usage:
+		```rust
+		use std::fs::File;
+
+		fn main() {
+			let f = File::open("hello.txt");
+
+			let f = match f {
+				Ok(file) => file,
+				Err(error) => panic!("Problem opening the file: {:?}", error),
+			};
+		}
+		```
+		Check out https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html#matching-on-different-errors for an example of error handling with `match`
+	
+	* Shortcuts to error handling
+		
+		* `unwrap()`
+			
+			If the Result value is the `Ok` variant, unwrap will return the value inside the Ok. If the Result is the `Err` variant, unwrap will call the panic! macro for us.
+			
+			Usage:
+			```rust
+			fn main() {
+				let f = File::open("hello.txt").unwrap();
+			}
+			```
+		* `expect()`
+			> expectlets us also choose the panic! error message. Using expect instead of unwrap and providing good error messages can convey your intent and make tracking down the source of a panic easier.
+			Usage:
+			```rust
+			fn main() {
+				let f = File::open("hello.txt").expect("Failed to open hello.txt");
+			}
+			```
+		* Propogate errors with `?` operator
+			```rust
+			// Without '?'
+			fn read_username_from_file() -> Result<String, io::Error> {
+				let f = File::open("hello.txt");
+
+				let mut f = match f {
+					Ok(file) => file,
+					Err(e) => return Err(e),
+				};
+
+				let mut s = String::new();
+
+				match f.read_to_string(&mut s) {
+					Ok(_) => Ok(s),
+					Err(e) => Err(e),
+				}
+			}
+
+			// With '?'
+			fn read_username_from_file() -> Result<String, io::Error> {
+				let mut f = File::open("hello.txt")?;
+				let mut s = String::new();
+				f.read_to_string(&mut s)?;
+				Ok(s)
+			}
+
+			// With chaining
+			fn read_username_from_file() -> Result<String, io::Error> {
+				let mut s = String::new();
+				File::open("hello.txt")?.read_to_string(&mut s)?;
+				Ok(s)
+			}
+			```
+			**NOTE:** We are only allowed to use the ? operator in a function that returns `Result` or `Option` or another type that implements `std::ops::Try`
+		
+		* Error handling best practices
+			[https://doc.rust-lang.org/book/ch09-03-to-panic-or-not-to-panic.html](https://doc.rust-lang.org/book/ch09-03-to-panic-or-not-to-panic.html)
+
 ## Unclear
 
 1. To explicitly handle the possibility of overflow, you can use these families of methods that the standard library provides on primitive numeric types:
